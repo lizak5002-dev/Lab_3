@@ -1,0 +1,29 @@
+$primary-color: #87986a;
+$card-background: white;
+$text-color: #2d2e2b;
+$border-color: #576145;
+$secondary: #4f593c;
+$dark: #2d2e2b;
+$navbar-bg: #87986a;
+$footer-bg: #87986a;
+$body-bg: #effed6; 
+
+// Кастомный breakpoint для широких экранов
+$grid-breakpoints: (
+  xs: 0,
+  sm: 576px,
+  md: 768px,
+  lg: 992px,
+  xl: 1200px,
+  xxl: 1400px,
+  wide: 1500px  // кастомный breakpoint
+);
+
+$container-max-widths: (
+  sm: 540px,
+  md: 720px,
+  lg: 960px,
+  xl: 1140px,
+  xxl: 1320px,
+  wide: 1500px  // максимальная ширина для wide
+);

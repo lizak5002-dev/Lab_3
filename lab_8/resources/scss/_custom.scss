@@ -1,0 +1,113 @@
+// Примесь для карточек с переменным цветом фона
+@mixin card-theme($color) {
+  background-color: $color !important;
+  border-color: darken($color, 15%) !important;
+
+  .label {
+    background-color: lighten($color, 15%) !important;
+    color: $text-color !important;
+    border: 1px solid darken($color, 10%) !important;
+  }
+}
+
+// Цикл для генерации цветов фона карточек на основе primary-color
+@for $i from 1 through 10 {
+  .row > *:nth-child(#{$i}) .card {
+    $cycle-index: ($i - 1) % 5 + 1; // Вычисляем позицию в цикле (1-5, 1-5, ...)
+    $lightness: $cycle-index * 6%; // Увеличиваем светлоту от 6% до 30%
+    $card-color: lighten($primary-color, $lightness);
+    @include card-theme($card-color);
+  }
+}
+
+body {
+  background-color: $body-bg !important;
+}
+
+// Навигационная панель
+.navbar {
+  background-color: $navbar-bg !important;
+  
+  .navbar-brand {
+    color: $card-background !important;
+    font-weight: bold;
+  }
+  
+  .nav-link {
+    color: $card-background !important;
+    
+    &:hover {
+      color: lighten($card-background, 15%) !important;
+    }
+  }
+  
+  .btn-outline-success {
+    color: $card-background;
+    border-color: $card-background;
+    
+    &:hover {
+      background-color: $card-background;
+      color: $navbar-bg;
+    }
+  }
+}
+
+// Базовые стили карточек (переопределяем Bootstrap)
+.card {
+  border: 1px solid $border-color !important;
+  box-shadow: 0 4px 8px rgba(80, 80, 79, 0.1) !important;
+  
+  .card-title {
+    color: $dark !important;
+    font-weight: bold;
+  }
+  
+  .card-text {
+    color: $dark !important;
+  }
+  
+  .btn-primary {
+    background-color: $secondary !important;
+    border-color: $secondary !important;
+    
+    &:hover {
+      background-color: darken($secondary, 10%) !important;
+      border-color: darken($secondary, 10%) !important;
+    }
+  }
+}
+
+h1 {
+  color: $dark;
+}
+
+//Стили для .label
+.label {
+  background-color: $card-background;
+  padding: 2px 6px;
+  border-radius: 8px;
+  color: $text-color;
+  font-size: 14px;
+}
+
+footer {
+  background-color: $footer-bg !important;
+  color: $card-background !important;
+  
+  .container {
+    background-color: transparent !important; 
+  }
+  
+  p, a {
+    color: $card-background !important;
+  }
+  
+  .social-icons img {
+    border-radius: 4px;
+    transition: transform 0.3s ease;
+    
+    &:hover {
+      transform: scale(1.1);
+    }
+  }
+}
