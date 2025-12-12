@@ -62,6 +62,12 @@ body {
     font-weight: bold;
   }
   
+  .card-img-top {
+    height: 300px !important;
+    object-fit: cover !important;
+    object-position: center !important;
+  }
+
   .card-text {
     color: $dark !important;
   }
