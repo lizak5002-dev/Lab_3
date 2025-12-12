@@ -9,9 +9,8 @@ use Illuminate\Support\Facades\Storage;
 
 class CastleController extends Controller
 {
-    /**
-     * Правила валидации
-     */
+    
+    //Правила валидации
     protected function validationRules($castle = null)
     {
         $rules = [
@@ -37,9 +36,8 @@ class CastleController extends Controller
     }
 
 
-/**
- * Обработка загрузки изображения (без ресайза)
- */
+
+    //Обработка загрузки изображения (без ресайза)
     protected function handleImageUpload(Request $request, $castle = null)
     {
         if (!$request->hasFile('image')) {
@@ -70,9 +68,7 @@ class CastleController extends Controller
             'preview' => $imagePath,
         ];
     }
-    /**
-     * Display a listing of the resource.
-     */
+    
     public function index(Request $request)
     {
         // Получаем уникальные века из БД
@@ -198,9 +194,7 @@ class CastleController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    /**
- * Update the specified resource in storage.
- */
+
     public function update(Request $request, Castle $castle)
     {
         // Валидация

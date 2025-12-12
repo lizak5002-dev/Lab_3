@@ -7,10 +7,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Castle extends Model
 {
     use HasFactory;
+    use SoftDeletes;
 
     /**
      * Поля, которые можно массово назначать
@@ -38,6 +40,7 @@ class Castle extends Model
         'year_founded' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
     /**
