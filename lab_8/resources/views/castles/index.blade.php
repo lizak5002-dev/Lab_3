@@ -8,72 +8,15 @@
         <i class="fas fa-castle"></i> Замки Эстонии
         <small class="text-muted">({{ $castles->count() }} замков)</small>
     </h1>
-    
+    @if (Auth::check())
     <a href="{{ route('castles.create') }}" class="btn btn-success btn-lg">
         <i class="fas fa-plus"></i> Добавить замок
     </a>
-</div>
-
-<!-- Фильтры -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="GET" action="{{ route('castles.index') }}" class="row g-3">
-            <!-- Фильтр по веку -->
-            <div class="col-md-4">
-                <label for="century" class="form-label">Век основания</label>
-                <select name="century" id="century" class="form-select">
-                    <option value="">Все века</option>
-                    @forelse($availableCenturies as $century)
-                        @php
-                            $centuryNumber = (int) filter_var($century, FILTER_SANITIZE_NUMBER_INT);
-                        @endphp
-                        <option value="{{ $centuryNumber }}" 
-                                {{ request('century') == $centuryNumber ? 'selected' : '' }}>
-                            {{ $century }}
-                        </option>
-                    @endforeach
-                </select>
-                @if(count($availableCenturies) > 0)
-                    <div class="form-text">
-                        {{ count($availableCenturies) }} вариантов
-                    </div>
-                @endif
-            </div>
-            
-            <!-- Фильтр по принадлежности -->
-            <div class="col-md-4">
-                <label for="affiliation" class="form-label">Принадлежность</label>
-                <select name="affiliation" id="affiliation" class="form-select">
-                    <option value="">Все принадлежности</option>
-                    @foreach($availableAffiliations as $affiliation)
-                        <option value="{{ $affiliation }}" 
-                                {{ request('affiliation') == $affiliation ? 'selected' : '' }}>
-                            {{ $affiliation }}
-                        </option>
-                    @endforeach
-                </select>
-                @if(count($availableAffiliations) > 0)
-                    <div class="form-text">
-                        {{ count($availableAffiliations) }} вариантов
-                    </div>
-                @endif
-            </div>
-            
-            <!-- Кнопки -->
-            <div class="col-md-4">
-                <!-- Пустой label для выравнивания -->
-                <label class="form-label d-md-block d-none" style="visibility: hidden;">Действия</label>
-                <div class="d-flex">
-                    <button type="submit" class="btn btn-primary me-2 flex-grow-1">
-                        <i class="fas fa-filter"></i> Фильтровать
-                    </button>
-                    <a href="{{ route('home') }}" class="btn btn-outline-secondary flex-grow-1">
-                        <i class="fas fa-times"></i> Сбросить
-                    </a>
-                </div>
-            </div>
-        </form>
-    </div>
+    @else
+        <a class="btn btn-success btn-lg disabled">
+        <i class="fas fa-plus"></i> Добавить замок
+    </a>
+    @endif
 </div>
 
 <!-- Список замков -->
@@ -106,44 +49,37 @@
                 
                 <div class="card-footer bg-transparent">
                     <div class="d-flex justify-content-between">
+                        <!-- ВСЕГДА показываем "Подробнее" -->
                         <a href="{{ route('castles.show', $castle) }}" class="btn btn-sm btn-outline-primary">
                             <i class="fas fa-eye"></i> Подробнее
                         </a>
                         
-                        <div>
-                            <a href="{{ route('castles.edit', $castle) }}" class="btn btn-sm btn-outline-warning">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            
-                            <button type="button" class="btn btn-sm btn-outline-danger" 
-                                    data-bs-toggle="modal" 
-                                    data-bs-target="#deleteModal{{ $castle->id }}">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Модальное окно удаления для каждого замка -->
-            <div class="modal fade" id="deleteModal{{ $castle->id }}" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Удалить замок?</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            Вы уверены, что хотите удалить замок "{{ $castle->name }}"?
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                            <form action="{{ route('castles.destroy', $castle) }}" method="POST">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-danger">Удалить</button>
-                            </form>
-                        </div>
+                        <!-- Кнопки АДМИНА (только если пользователь авторизован И админ) -->
+                        @if(Auth::check() && Auth::user()->is_admin)
+                            <div class="d-flex">
+                                <!-- Кнопка "Восстановить" ТОЛЬКО если замок удален -->
+                                @if($castle->trashed())
+                                    <form action="{{ route('castles.restore', $castle->id) }}" method="post" class="me-2">
+                                        @csrf
+                                        <input type="hidden" name="return_url" value="{{ Request::url() }}">
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="fas fa-undo"></i> Восстановить
+                                        </button>
+                                    </form>
+                                @endif
+                                
+                                <!-- Кнопка "Удалить навсегда" (для админа) -->
+                                <!-- Может быть всегда или только для удаленных - решите что нужно -->
+                                <form action="{{ route('castles.purge', $castle->id) }}" method="post">
+                                    @csrf
+                                    <input type="hidden" name="return_url" value="{{ Request::url() }}">
+                                    <button type="submit" class="btn btn-danger btn-sm" 
+                                            onclick="return confirm('Удалить навсегда? Это действие нельзя отменить!')">
+                                        <i class="fas fa-fire"></i> Удалить навсегда
+                                    </button>
+                                </form>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>

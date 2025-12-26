@@ -93,69 +93,46 @@
             </div>
             
             <div class="card-footer">
-                <div class="d-flex justify-content-between">
-                    <a href="{{ route('castles.index') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left"></i> Назад к списку
-                    </a>
-                    
-                    <div>
-                        <a href="{{ route('castles.edit', $castle) }}" class="btn btn-warning">
-                            <i class="fas fa-edit"></i> Редактировать
-                        </a>
-                        
-                        <!-- Кнопка удаления с подтверждением -->
-                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                            <i class="fas fa-trash"></i> Удалить
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Боковая панель с действиями -->
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-bolt"></i> Быстрые действия</h5>
-            </div>
-            <div class="card-body">
-                <a href="{{ route('castles.create') }}" class="btn btn-success btn-lg w-100 mb-3">
-                    <i class="fas fa-plus"></i> Добавить новый замок
+    <div class="d-flex justify-content-between">
+        <a href="{{ route('castles.index') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Назад к списку
+        </a>
+        
+        <!-- Кнопки "Редактировать" и "Удалить" ТОЛЬКО если это мой замок -->
+        @can('modify-object', $castle)
+            <div>
+                <!-- Редактировать -->
+                <a href="{{ route('castles.edit', $castle) }}" class="btn btn-warning">
+                    <i class="fas fa-edit"></i> Редактировать
                 </a>
                 
-                <div class="list-group">
-                    <a href="{{ route('castles.index') }}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-list"></i> Все замки
-                    </a>
-                    <a href="{{ route('castles.edit', $castle) }}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-edit"></i> Редактировать этот замок
-                    </a>
-                    <button type="button" class="list-group-item list-group-item-action text-danger" 
-                            data-bs-toggle="modal" data-bs-target="#deleteModal">
-                        <i class="fas fa-trash"></i> Удалить этот замок
-                    </button>
-                </div>
+                <!-- Мягкое удаление (только если не удален) -->
+                @if(!$castle->trashed())
+                    <form action="{{ route('castles.destroy', $castle) }}" method="POST" class="d-inline">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger" 
+                                onclick="return confirm('Переместить в корзину?')">
+                            <i class="fas fa-trash"></i> Удалить
+                        </button>
+                    </form>
+                @else
+                    <!-- Восстановить (если удален) -->
+                    <form action="{{ route('castles.restore', $castle) }}" method="POST" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-undo"></i> Восстановить
+                        </button>
+                    </form>
+                @endif
             </div>
-        </div>
-        
-        <!-- Статистика -->
-        <div class="card mt-3">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Статистика</h5>
-            </div>
-            <div class="card-body">
-                <p>Всего замков в базе: <strong>{{ App\Models\Castle::count() }}</strong></p>
-                <p>Замков {{ $castle->century_founded }}: 
-                    <strong>{{ App\Models\Castle::where('century_founded', $castle->century_founded)->count() }}</strong>
-                </p>
-                <p>Принадлежность {{ $castle->affiliation }}: 
-                    <strong>{{ App\Models\Castle::where('affiliation', $castle->affiliation)->count() }}</strong>
-                </p>
-            </div>
-        </div>
+        @endcan
     </div>
 </div>
+       
+   
+
+
 
 <!-- Модальное окно для увеличения изображения -->
 <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">

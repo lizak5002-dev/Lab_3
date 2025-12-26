@@ -246,12 +246,6 @@
                         </a>
                         
                         <div>
-                            @if(isset($castle))
-                                <!-- Кнопка просмотра при редактировании -->
-                                <a href="{{ route('castles.show', $castle) }}" class="btn btn-info me-2">
-                                    <i class="fas fa-eye"></i> Просмотр
-                                </a>
-                            @endif
                             
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save"></i>

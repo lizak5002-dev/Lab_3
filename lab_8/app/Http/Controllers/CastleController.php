@@ -4,8 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Castle;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
+
 
 class CastleController extends Controller
 {
@@ -68,56 +72,34 @@ class CastleController extends Controller
             'preview' => $imagePath,
         ];
     }
-    
-    public function index(Request $request)
+
+
+    public function index(Request $request, \App\Models\User $User = null)
     {
-        // Получаем уникальные века из БД
-        $availableCenturies = Castle::select('century_founded')
-            ->distinct()
-            ->orderBy('century_founded')
-            ->pluck('century_founded');
+        if (is_null($User)) {
+            // По умолчанию SoftDeletes скроет удаленные для всех
+            $castles = Castle::all();
             
-        // Получаем уникальные принадлежности из БД
-        $availableAffiliations = Castle::select('affiliation')
-            ->distinct()
-            ->orderBy('affiliation')
-            ->pluck('affiliation');
-            
-        // Фильтрация
-        $query = Castle::query();
-            
-        // Фильтр по веку
-        if ($request->has('century') && $request->century) {
-            // Если передано число, ищем как "13%"
-            if (is_numeric($request->century)) {
-                $query->where('century_founded', 'like', $request->century . '%');
-            } else {
-                $query->where('century_founded', $request->century);
+            // Но админу покажем все
+            if (Auth::check() && Auth::user()->is_admin) {
+                $castles = Castle::withTrashed()->get();
             }
+        } else {
+            // Замки конкретного пользователя (только неудаленные)
+            $castles = $User->castles; // Автоматически скрывает удаленные
         }
-            
-        // Фильтр по принадлежности
-        if ($request->has('affiliation') && $request->affiliation) {
-            $query->where('affiliation', $request->affiliation);
-        }
-            
-        // Сортировка и пагинация
-        //$castles = Castle::orderBy('id', 'asc')->get();
-        $castles = $query->orderBy('created_at', 'desc')->paginate(12);
-            
-        // Возвращаем все необходимые переменные
-        return view('castles.index', compact(
-            'castles', 
-            'availableCenturies', 
-            'availableAffiliations'
-        ));
+        
+        return view('castles.index', compact(['castles']));
     }
+    
     /**
      * Show the form for creating a new resource.
      */
-        public function create()
+    public function create()
     {
-        // Возвращаем форму создания
+        if (!Auth::check()) {
+            abort(401, "Authentication required");
+        }
         return view('castles.form');
     }
 
@@ -166,7 +148,7 @@ class CastleController extends Controller
             $validated['image_original'] = 'img/default-castle.jpg';
             $validated['image_preview'] = 'img/default-castle.jpg';
         }
-            
+        
             // Создаем запись
         $castle = Castle::create($validated);
             
@@ -188,6 +170,11 @@ class CastleController extends Controller
      */
     public function edit(Castle $castle)
     {
+        // Проверка: это мой замок ИЛИ я админ
+        if (!Gate::allows('modify-object', $castle)) {
+            abort(403, "Вы можете редактировать только свои замки");
+        }
+        
         return view('castles.form', compact('castle'));
     }
 
@@ -197,6 +184,9 @@ class CastleController extends Controller
 
     public function update(Request $request, Castle $castle)
     {
+        if (!Gate::allows('modify-object', $castle)) {
+            abort(403, "Вы можете редактировать только свои замки");
+        }
         // Валидация
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:castles,name,' . $castle->id,
@@ -250,11 +240,11 @@ class CastleController extends Controller
             ->with('success', 'Замок успешно обновлен!');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Castle $castle)
     {
+        if (!Gate::allows('modify-object', $castle)) {
+            abort(403, "Вы можете редактировать только свои замки");
+        }
         // Удаляем запись
         $castle->delete();
         
@@ -262,4 +252,38 @@ class CastleController extends Controller
         return redirect()->route('castles.index')
             ->with('success', 'Замок успешно удален!');
     }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function restore(Request $request, int $id)
+    {
+        // Восстановить может админ ИЛИ владелец замка
+        $castle = Castle::withTrashed()->findOrFail($id);
+        
+        if (!Auth::check() || (Auth::id() != $castle->user_id && !Auth::user()->is_admin)) {
+            abort(403, "Unauthorized");
+        }
+        
+        $castle->restore();
+        
+        return redirect($request['return_url'] ?? route('castles.index'))
+            ->with('success', 'Замок восстановлен!');
+    }
+    // удалить насовсем
+    public function purge(Request $request, int $id)
+    {
+        // Удалить окончательно может ТОЛЬКО админ
+        if (!Auth::check() || !Auth::user()->is_admin) {
+            abort(403, 'Только администратор может удалять навсегда');
+        }
+        
+        $castle = Castle::withTrashed()->findOrFail($id);
+        $castle->forceDelete();
+        
+        return redirect($request['return_url'] ?? route('castles.index'))
+            ->with('success', 'Замок удален навсегда!');
+    }
 }
+
+

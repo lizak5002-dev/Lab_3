@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class Castle extends Model
 {
@@ -31,6 +33,7 @@ class Castle extends Model
         'image_thumbnail',    
         'image_preview',     
         'image_alt', 
+        'user_id',
     ];
 
     /**
@@ -153,13 +156,6 @@ class Castle extends Model
     }
 
     /**
-     * Связи (если будут другие таблицы)
-     */
-    // public function photos()
-    // {
-    //     return $this->hasMany(CastlePhoto::class);
-    // }
-    /**
      * Акцессор для получения пути к изображению
      */
     protected function imageUrl(): Attribute
@@ -189,23 +185,46 @@ class Castle extends Model
         );
     }
 
-    /**
-     * Удаляем изображения при удалении модели
-     */
-    protected static function boot()
+    public function user()
     {
-        parent::boot();
+    return $this->belongsTo(User::class);
+    }
+
+    protected static function booted()
+    {
+        static::creating(function ($castle) {
+            if (!Auth::check())
+                abort(401, "Authentication required");
+            $castle->user_id = Auth::id();
+        });
+        static::updating(function ($castle) {
+            $user = Auth::user();
+            
+            if (!$user) {
+                abort(401, 'Требуется авторизация');
+            }
+            
+            // Проверка: текущий пользователь - владелец ИЛИ админ
+            if ($user->id !== $castle->user_id && !$user->is_admin) {
+                abort(403, 'Вы можете редактировать только свои замки');
+            }
+            
+            return true; // Разрешаем обновление
+        });
 
         static::deleting(function ($castle) {
-            if ($castle->image_original) {
-                Storage::disk('public')->delete($castle->image_original);
+            $user = Auth::user();
+            
+            if (!$user) {
+                abort(401, 'Требуется авторизация');
             }
-            if ($castle->image_thumbnail) {
-                Storage::disk('public')->delete($castle->image_thumbnail);
+            
+            if ($user->id !== $castle->user_id && !$user->is_admin) {
+                abort(403, 'Вы можете удалять только свои замки');
             }
-            if ($castle->image_preview) {
-                Storage::disk('public')->delete($castle->image_preview);
-            }
+            
+            return true; // Разрешаем удаление
         });
+       
     }
 }
